@@ -1,0 +1,78 @@
+00000055  33C0              xor ax,ax
+00000057  FA                cli
+00000058  BA00F2            mov dx,0xf200
+0000005B  B80700            mov ax,0x7
+0000005E  EF                out dx,ax
+0000005F  BA02F2            mov dx,0xf202
+00000062  B80B40            mov ax,0x400b
+00000065  EF                out dx,ax
+00000066  B80D00            mov ax,0xd
+00000069  EF                out dx,ax
+0000006A  B80D00            mov ax,0xd
+0000006D  EF                out dx,ax
+0000006E  B83F02            mov ax,0x23f
+00000071  EF                out dx,ax
+00000072  B93200            mov cx,0x32
+00000075  E2FE              loop 0x75
+00000077  BA00F2            mov dx,0xf200
+0000007A  B80400            mov ax,0x4
+0000007D  EF                out dx,ax
+0000007E  B8FEFF            mov ax,0xfffe
+00000081  8BE0              mov sp,ax
+00000083  33C0              xor ax,ax
+00000085  8ED8              mov ds,ax
+00000087  8ED0              mov ss,ax
+00000089  B800C0            mov ax,0xc000
+0000008C  8EC0              mov es,ax
+0000008E  33ED              xor bp,bp
+00000090  B90040            mov cx,0x4000
+00000093  BA3A02            mov dx,0x23a
+00000096  B80000            mov ax,0x0
+00000099  EF                out dx,ax
+0000009A  BB0000            mov bx,0x0
+0000009D  E81C00            call word 0xbc
+000000A0  B800F0            mov ax,0xf000
+000000A3  8EC0              mov es,ax
+000000A5  33ED              xor bp,bp
+000000A7  B9807F            mov cx,0x7f80
+000000AA  BA3A02            mov dx,0x23a
+000000AD  B80000            mov ax,0x0
+000000B0  EF                out dx,ax
+000000B1  BB0080            mov bx,0x8000
+000000B4  E80500            call word 0xbc
+000000B7  EA5BE000F0        jmp word 0xf000:0xe05b
+000000BC  8BC3              mov ax,bx
+000000BE  BA3802            mov dx,0x238
+000000C1  EF                out dx,ax
+000000C2  ED                in ax,dx
+000000C3  80FC00            cmp ah,0x0
+000000C6  74FA              jz 0xc2
+000000C8  26884600          mov [es:bp+0x0],al
+000000CC  45                inc bp
+000000CD  ED                in ax,dx
+000000CE  80FC00            cmp ah,0x0
+000000D1  74FA              jz 0xcd
+000000D3  26884600          mov [es:bp+0x0],al
+000000D7  45                inc bp
+000000D8  43                inc bx
+000000D9  E2E1              loop 0xbc
+000000DB  C3                ret
+000000DC  0000              add [bx+si],al
+000000DE  0000              add [bx+si],al
+000000E0  0000              add [bx+si],al
+000000E2  0000              add [bx+si],al
+000000E4  0000              add [bx+si],al
+000000E6  0000              add [bx+si],al
+000000E8  0000              add [bx+si],al
+000000EA  0000              add [bx+si],al
+000000EC  0000              add [bx+si],al
+000000EE  0000              add [bx+si],al
+000000F0  EA55FF00F0        jmp word 0xf000:0xff55
+000000F5  3039              xor [bx+di],bh
+000000F7  2F                das
+000000F8  3039              xor [bx+di],bh
+000000FA  2F                das
+000000FB  3130              xor [bx+si],si
+000000FD  5C                pop sp
+000000FE  FC                cld
+000000FF  23                db 0x23

@@ -1,0 +1,244 @@
+00000000  EB1C              jmp short 0x1e
+00000002  90                nop
+00000003  44                inc sp
+00000004  45                inc bp
+00000005  56                push si
+00000006  3332              xor si,[bp+si]
+00000008  007000            add [bx+si+0x0],dh
+0000000B  0002              add [bp+si],al
+0000000D  0101              add [bx+di],ax
+0000000F  0002              add [bp+si],al
+00000011  E000              loopne 0x13
+00000013  40                inc ax
+00000014  0BF0              or si,ax
+00000016  0900              or [bx+si],ax
+00000018  1200              adc al,[bx+si]
+0000001A  0200              add al,[bx+si]
+0000001C  0000              add [bx+si],al
+0000001E  BC0000            mov sp,0x0
+00000021  BF0080            mov di,0x8000
+00000024  E88801            call word 0x1af
+00000027  B03E              mov al,0x3e
+00000029  E85B01            call word 0x187
+0000002C  B020              mov al,0x20
+0000002E  E85601            call word 0x187
+00000031  E88A01            call word 0x1be
+00000034  E85001            call word 0x187
+00000037  245F              and al,0x5f
+00000039  3C4D              cmp al,0x4d
+0000003B  7457              jz 0x94
+0000003D  3C50              cmp al,0x50
+0000003F  7424              jz 0x65
+00000041  3C47              cmp al,0x47
+00000043  7503              jnz 0x48
+00000045  E92F01            jmp word 0x177
+00000048  90                nop
+00000049  90                nop
+0000004A  90                nop
+0000004B  90                nop
+0000004C  90                nop
+0000004D  90                nop
+0000004E  90                nop
+0000004F  90                nop
+00000050  90                nop
+00000051  90                nop
+00000052  90                nop
+00000053  90                nop
+00000054  90                nop
+00000055  90                nop
+00000056  90                nop
+00000057  90                nop
+00000058  90                nop
+00000059  B020              mov al,0x20
+0000005B  E82901            call word 0x187
+0000005E  B03F              mov al,0x3f
+00000060  E82401            call word 0x187
+00000063  EBBF              jmp short 0x24
+00000065  E84701            call word 0x1af
+00000068  B050              mov al,0x50
+0000006A  E81A01            call word 0x187
+0000006D  B020              mov al,0x20
+0000006F  E81501            call word 0x187
+00000072  E84E01            call word 0x1c3
+00000075  80FC00            cmp ah,0x0
+00000078  75DF              jnz 0x59
+0000007A  88C7              mov bh,al
+0000007C  E84401            call word 0x1c3
+0000007F  80FC00            cmp ah,0x0
+00000082  75D5              jnz 0x59
+00000084  88FC              mov ah,bh
+00000086  89C7              mov di,ax
+00000088  50                push ax
+00000089  B03D              mov al,0x3d
+0000008B  E8F900            call word 0x187
+0000008E  58                pop ax
+0000008F  E80001            call word 0x192
+00000092  EB90              jmp short 0x24
+00000094  E81801            call word 0x1af
+00000097  B04D              mov al,0x4d
+00000099  E8EB00            call word 0x187
+0000009C  B020              mov al,0x20
+0000009E  E8E600            call word 0x187
+000000A1  89F8              mov ax,di
+000000A3  E8EC00            call word 0x192
+000000A6  B020              mov al,0x20
+000000A8  E8DC00            call word 0x187
+000000AB  B400              mov ah,0x0
+000000AD  8A05              mov al,[di]
+000000AF  E8E000            call word 0x192
+000000B2  B020              mov al,0x20
+000000B4  E8D000            call word 0x187
+000000B7  E80901            call word 0x1c3
+000000BA  80FC00            cmp ah,0x0
+000000BD  7505              jnz 0xc4
+000000BF  8805              mov [di],al
+000000C1  47                inc di
+000000C2  EBD0              jmp short 0x94
+000000C4  3C20              cmp al,0x20
+000000C6  7402              jz 0xca
+000000C8  EB8F              jmp short 0x59
+000000CA  B02B              mov al,0x2b
+000000CC  E8B800            call word 0x187
+000000CF  47                inc di
+000000D0  EBC2              jmp short 0x94
+000000D2  E8DA00            call word 0x1af
+000000D5  B052              mov al,0x52
+000000D7  E8AD00            call word 0x187
+000000DA  B020              mov al,0x20
+000000DC  E8A800            call word 0x187
+000000DF  E8E100            call word 0x1c3
+000000E2  80FC00            cmp ah,0x0
+000000E5  0F8570FF          jnz word 0x59
+000000E9  B402              mov ah,0x2
+000000EB  EB19              jmp short 0x106
+000000ED  E8BF00            call word 0x1af
+000000F0  B057              mov al,0x57
+000000F2  E89200            call word 0x187
+000000F5  B020              mov al,0x20
+000000F7  E88D00            call word 0x187
+000000FA  E8C600            call word 0x1c3
+000000FD  80FC00            cmp ah,0x0
+00000100  0F8555FF          jnz word 0x59
+00000104  B403              mov ah,0x3
+00000106  88C5              mov ch,al
+00000108  C0ED04            shr ch,0x4
+0000010B  80E50F            and ch,0xf
+0000010E  88C1              mov cl,al
+00000110  80E10F            and cl,0xf
+00000113  B200              mov dl,0x0
+00000115  B600              mov dh,0x0
+00000117  B001              mov al,0x1
+00000119  89FB              mov bx,di
+0000011B  CD13              int 0x13
+0000011D  80FC00            cmp ah,0x0
+00000120  7417              jz 0x139
+00000122  B020              mov al,0x20
+00000124  E86000            call word 0x187
+00000127  B045              mov al,0x45
+00000129  E85B00            call word 0x187
+0000012C  B052              mov al,0x52
+0000012E  E85600            call word 0x187
+00000131  B052              mov al,0x52
+00000133  E85100            call word 0x187
+00000136  E9EBFE            jmp word 0x24
+00000139  B020              mov al,0x20
+0000013B  E84900            call word 0x187
+0000013E  B04F              mov al,0x4f
+00000140  E84400            call word 0x187
+00000143  B04B              mov al,0x4b
+00000145  E83F00            call word 0x187
+00000148  E9D9FE            jmp word 0x24
+0000014B  B021              mov al,0x21
+0000014D  E83700            call word 0x187
+00000150  B020              mov al,0x20
+00000152  E83200            call word 0x187
+00000155  E86600            call word 0x1be
+00000158  3C21              cmp al,0x21
+0000015A  0F85FBFE          jnz word 0x59
+0000015E  B402              mov ah,0x2
+00000160  B500              mov ch,0x0
+00000162  B102              mov cl,0x2
+00000164  B200              mov dl,0x0
+00000166  B600              mov dh,0x0
+00000168  B008              mov al,0x8
+0000016A  BB0010            mov bx,0x1000
+0000016D  CD13              int 0x13
+0000016F  80FC00            cmp ah,0x0
+00000172  75AE              jnz 0x122
+00000174  BF0010            mov di,0x1000
+00000177  E83500            call word 0x1af
+0000017A  57                push di
+0000017B  E80400            call word 0x182
+0000017E  5F                pop di
+0000017F  E9A2FE            jmp word 0x24
+00000182  57                push di
+00000183  C3                ret
+00000184  58                pop ax
+00000185  50                push ax
+00000186  C3                ret
+00000187  50                push ax
+00000188  53                push bx
+00000189  B40E              mov ah,0xe
+0000018B  B700              mov bh,0x0
+0000018D  CD10              int 0x10
+0000018F  5B                pop bx
+00000190  58                pop ax
+00000191  C3                ret
+00000192  50                push ax
+00000193  51                push cx
+00000194  B104              mov cl,0x4
+00000196  C1C004            rol ax,0x4
+00000199  50                push ax
+0000019A  240F              and al,0xf
+0000019C  0C30              or al,0x30
+0000019E  3C3A              cmp al,0x3a
+000001A0  7C02              jl 0x1a4
+000001A2  0407              add al,0x7
+000001A4  E8E0FF            call word 0x187
+000001A7  58                pop ax
+000001A8  FEC9              dec cl
+000001AA  75EA              jnz 0x196
+000001AC  59                pop cx
+000001AD  58                pop ax
+000001AE  C3                ret
+000001AF  50                push ax
+000001B0  B80D00            mov ax,0xd
+000001B3  E8D1FF            call word 0x187
+000001B6  B80A00            mov ax,0xa
+000001B9  E8CBFF            call word 0x187
+000001BC  58                pop ax
+000001BD  C3                ret
+000001BE  B400              mov ah,0x0
+000001C0  CD16              int 0x16
+000001C2  C3                ret
+000001C3  53                push bx
+000001C4  B302              mov bl,0x2
+000001C6  E8F5FF            call word 0x1be
+000001C9  E8BBFF            call word 0x187
+000001CC  3C30              cmp al,0x30
+000001CE  7C29              jl 0x1f9
+000001D0  3C39              cmp al,0x39
+000001D2  7E10              jng 0x1e4
+000001D4  3C41              cmp al,0x41
+000001D6  7C21              jl 0x1f9
+000001D8  245F              and al,0x5f
+000001DA  3C41              cmp al,0x41
+000001DC  7C1B              jl 0x1f9
+000001DE  3C47              cmp al,0x47
+000001E0  7D17              jnl 0x1f9
+000001E2  2C07              sub al,0x7
+000001E4  240F              and al,0xf
+000001E6  FECB              dec bl
+000001E8  7409              jz 0x1f3
+000001EA  C0E004            shl al,0x4
+000001ED  24F0              and al,0xf0
+000001EF  88C7              mov bh,al
+000001F1  EBD3              jmp short 0x1c6
+000001F3  08F8              or al,bh
+000001F5  B400              mov ah,0x0
+000001F7  5B                pop bx
+000001F8  C3                ret
+000001F9  88C4              mov ah,al
+000001FB  5B                pop bx
+000001FC  C3                ret
+000001FD  0055AA            add [di-0x56],dl
