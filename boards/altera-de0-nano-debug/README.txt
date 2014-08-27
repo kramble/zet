@@ -44,48 +44,53 @@ to halt (asserts reset). "v" switches between the simple vga display and the nor
 but this will not work until the bios is loaded.
 
 The following may change as future features are implemented...
-To load the bios, select "s" which uploads data for the bootrom (256 bytes), choose the
-bootnano.zet file. NB this is a patched version of bootrom.dat which supports the
-console bulk loader (the "s" loader is a hardware feature which writes to bootrom).
-... and that step is no longer needed as bootnano is now compiled into the SOF.
-Then select "r" to run (don't forget this step else nothing happens!).
-Select "k" which sends bulk data, choose the biosfd_v02.zbd file, transfer takes around
-10 seconds. NB this is a patched version of the bios to support the console bulk loader.
-Select "v" to switch to the main vga, you should see the BIOS startup messages. It will
-be paused at the "Booting device: Floppy flash image" message.
-Select "k" and choose mos_v01.zbd (this is a boot sector implementing a simple monitor).
-You should now have a "> " prompt. The available commands are M, P, and G for modify Memory,
-set address Pointer and Goto (executes an in-segment call, return with ret C3).
-Initial address is 0000:8000 (only segment 0000 is supported by the monitor, though you are
-free to do what you like in the executed code). The R and W commands to read and write
-diskette sectors are currently disabled as this is not yet supported for the console
-bulk loader (which replaces the flash diskette code). The SDCARD HDD may work, but I
-can't test it yet. And if you take a look at the code, the enigmatic B! command initiated
-a boot of the full MOS Operating System (MyOS, one of my older projects, which is NOT the
-same as this one http://sourceforge.net/projects/myos-os/). Unfortunately this probably
-won't work as it uses some 80386 16-bit opcodes, not supported on the 8086/80186.
+
+DOS6.22 now boots from diskette emulation (read-only) via console
+
+You will need a 1.44MB floppy disk image for the DOS6.22 boot disk (available on
+the web), ensure it is named Dos6.22.img
+
+It is advisable to REM out any devices loaded by config.sys or autoexec.bat (winimage
+is a useful utility to mount and modify disk images http://www.winimage.com/).
+
+Convert the image into the upload format: zpack Dos6.22.img
+You should now have a file Dos6.22.img.zpk
+
+Load the SOF configuration into the DE0-Nano via program-fpga-board.bat
+
+Start the console via console.bat
+
+Just enter "b" and the console will upload the bios, switch to VGA video and boot DOS.
+
+The console is now running in a loop. To abort, press CONTROL-C. You can restart it
+and type "b" to continue floppy emulation (the boot will be skipped), or to reboot
+just type "h" to halt (and reset) the CPU, "v" to switch back to the simple VGA display
+(if neccessary), then "b".
+
+Note that the bios file (biosfd_v04.zbd) and disk image file (Dos6.22.img.zpk) are
+currently hard-coded in console.tcl (edit to change). The bios has been patched to
+support the console bios upload and floppy disk emulation (read-only).
 
 Console commands
 a : print bulk load address (nano_flash.v port 0238,023A)
+b : boot and run diskette emulator (zpk file)
 d : print gpio led data
 h : halt (reset)
-k : select bulk data file and upload
+k : select bulk data file and upload (zbd file)
 q : quit console
 r : run (deasserts reset)
-s : select bootrom data file and upload (NB different file format to bulk data)
+s : select bootrom data file and upload (zet file)
 v : toggle VGA display adapter
 x : exit console (synonym for quit)
 
-There are a couple of utilities for generating the .zet and .zbd files, genzet.cpp and
-genzbd.cpp (these are generic C programs which should compile easily, I have supplied
+There are utilities for generating the .zet .zbd and .zpk files, zetgen.cpp, zbdgen.cpp
+and zpack.cpp (these are generic C programs which should compile easily, I have supplied
 windows .exe versions compiled under MSVC 2008 Express). They take a binary file and
-convert it to the bootrom "s" and bulk loader "k" formats, respectively.
+convert it to the various upload formats.
 
 Upcoming features...
-Replacement of the initial bootrom in the FPGA SOF, so that bootnano.zet does not need
-to be loaded and we boot directly from the console bulk loader (DONE).
-Implementation of disk I/O via console (using the bulk loader interface). This should allow
-a normal DOS to boot rather than the mos_v01.zbd monitor.
+Fix bug where requesting the same sector twice hangs the console. This will require a
+request counter which can be implemented in the bios, or perhaps better, in hardware.
 Loading of the bios from SDCARD, which should fully automate the bootup process (I'm
 awaiting delivery of the Arduino sdcard adapter, so no progress on this yet).
 

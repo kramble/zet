@@ -39,31 +39,14 @@ proc hexincr {val} {
 	set hexval [format 0x%s $val]
 	set newval [expr {$hexval + 1}]
 	set retval [format %04x $newval]
-	# puts "newval=$newval"
-	# puts "retval=$retval"
 	return $retval
 }
 
 proc send_loop {fp} {
-	set begin_time [clock clicks -milliseconds]
 	set at_eof 0
 
 	while {$at_eof == 0} {
-		# Send a packet of data every few milliseconds (TODO may want to just send as fast as possible)
-		
-		set now [clock clicks -milliseconds]
-		# Comment out the wait to see how fast it will go at full speed (not much faster actually)
-		# STUPID interpreter attempts to parse COMMENTS, what IDIOT thought of that? So we need a closing brace!
-		# if { [expr {$now - $begin_time}] >= 2 } { } # added 2nd brace to avoid parse error IN COMMENT !!!!!!
 		if { 1 } {
-
-			set dt [expr {$now - $begin_time}]
-			set begin_time $now
-
-			if {$dt == 0} {
-				set dt 1
-			}
-
 			# Push 32 bits (4 bytes) each time, vis { command, word_address, high_byte, low_byte}
 			# command= { ~RESET, VIDEO, X, X, X, X, X, WR }
 			# NB set ~RESET=0 during I/O so as to halt the CPU and avoid contention
@@ -103,24 +86,58 @@ proc send_loop {fp} {
 }
 
 proc send_bulk {fp} {
-	set begin_time [clock clicks -milliseconds]
 	set at_eof 0
 
 	while {$at_eof == 0} {
-		# Send a packet of data every few milliseconds (TODO may want to just send as fast as possible)
-		
-		set now [clock clicks -milliseconds]
-		# Comment out the wait to see how fast it will go at full speed (not much faster actually)
-		# STUPID interpreter attempts to parse COMMENTS, what IDIOT thought of that? So we need a closing brace!
-		# if { [expr {$now - $begin_time}] >= 2 } { } # added 2nd brace to avoid parse error IN COMMENT !!!!!!
 		if { 1 } {
-
-			set dt [expr {$now - $begin_time}]
-			set begin_time $now
-
-			if {$dt == 0} {
-				set dt 1
+			# Push 256 bits (32 bytes) each time, vis flags + 31 data bytes
+			# Flags = top bit strobe and lowest 5 bits is byte count (0 is the idle state)
+			# TODO use 2 strobe bits and alternate for double the speed
+			# The data is read in raw form, so needs to be pre-formatted with control signals
+			# The flash controller latches data on strobe, then decrements count each time
+			# a byte is read, passing { count, byte } as the 16 bit word back to caller.
+			# Data is read by flash controller in sequence from low byte to high
+			# NB This uses a different vw channel, hence push_bulkdata_to_fpga
+			
+			set bytes 32
+			set data ""
+			
+			while {$bytes > 0} {
+				if [eof $fp] {
+					set at_eof 1
+					# This does not work, so tweak below (at ADDENDUM)
+					set inData 0
+				} else {
+					set inData [read $fp 1]
+				}
+				binary scan $inData c val
+				set val [expr {$val & 0xFF}]
+				# Tweak (see above)
+				if {$at_eof == 1} {
+					set val 0
+				}
+				set data [format %s%02x $data $val]
+				incr bytes -1
 			}
+
+			if { $at_eof == 0 } {
+				# puts "send $data"
+				push_bulkdata_to_fpga $data
+			}
+		}
+	}
+
+	return -1
+}
+
+proc send_sector {fp} {
+	# number of packets to send for 512 bytes (including pre and postamble)
+	set count 19
+	set at_eof 0
+
+	while {$at_eof == 0} {
+		
+		if { $count > 0 } {
 
 			# Push 256 bits (32 bytes) each time, vis flags + 31 data bytes
 			# Flags = top bit strobe and lowest 5 bits is byte count (0 is the idle state)
@@ -156,6 +173,10 @@ proc send_bulk {fp} {
 				# puts "send $data"
 				push_bulkdata_to_fpga $data
 			}
+			incr count -1
+		} else {
+			# kludge, just stop after count reaches 0
+			set at_eof 1
 		}
 	}
 
@@ -256,7 +277,7 @@ puts "FPGA Found: $fpga_name\n\n"
 set stop 0
 
 while {$stop==0} {
-	puts -nonewline "\nCommand (a,d,h,k,q,r,s,v,x)? "
+	puts -nonewline "\nCommand (a,b,d,h,k,q,r,s,v,x)? "
 	gets stdin cmd
 	puts ""
 	if { $cmd == "q" } {
@@ -284,19 +305,13 @@ while {$stop==0} {
 		# Halt
 		puts "Sending HALT (asserts reset)"
 		# Top bit is active-low reset
-		# push_data_to_fpga "00000000"
-		
-		# low bytes are just for test 4a17 = "halt"
-		push_data_to_fpga "00004a17"
+		push_data_to_fpga "00000000"
 	}
 	if { $cmd == "r" } {
 		# Run (removes reset)
 		puts "Sending RUN"
 		# Top bit is active-low reset
-		# push_data_to_fpga "80000000"
-		
-		# low bytes are just for test 6060 = "gogo"
-		push_data_to_fpga "80006060"
+		push_data_to_fpga "80000000"
 	}
 	if { $cmd == "v" } {
 		puts "Sending TOGGLE VIDEO"
@@ -304,67 +319,84 @@ while {$stop==0} {
 		push_data_to_fpga "c0003300"
 		push_data_to_fpga "800033ee"
 	}
-	if { $cmd == "disabled_p" } {
-		puts "Sending BOOT WAIT (use before b itself)"
-		# Start by sending reset
-		push_data_to_fpga "00000000"
-	
-		# Change boot vector to jump to itself at fff0 - so we can change other code
-		push_data_to_fpga "0178f0ea"
-		push_data_to_fpga "00000000"
-	}
-	if { $cmd == "disabled_b" } {
-		# Boot - simple test, now using the s function instead
-		# NB will need to return to "run" mode in order to see results on display (simple test sequencer)
-		puts "Sending BOOT"
-		# Start by sending reset
-		push_data_to_fpga "00000000"
+	if { $cmd == "b" } {
+		puts "Booting with flash emulation"
+		# Check for boot
+		set adata [get_bulkaddr_from_fpga]
+		# First byte is always 00, check the second byte (00 at boot, 01 or greater for diskett I/O)
+		set adata2 [string range $adata 2 3]
+		# puts "adata $adata 2nd byte $adata2"
+		if {$adata2 == "00"} {
+			# Send bios
+			puts "BOOT - Sending BIOS"
+			# Send Reset then Run
+			push_data_to_fpga "00000000"
+			push_data_to_fpga "80000000"
+			# Allow time for sdram init (not sure if needed, but may fix boot hangs)
+			after 500
+			# CARE HARD CODED FILENAME
+			set fdfilename "biosfd_v04.zbd"
+			puts "sending $fdfilename"
+			set fp [open "$fdfilename" r]
+			fconfigure $fp -translation binary
+			send_bulk $fp
+			# bulk address should now be 00010000 for first sector of DOS boot
+			set adata [get_bulkaddr_from_fpga]
+			while {$adata != "00010000"} {
+				# Happens always 0000FF7F ... probably due to delay before loading DOS boot sector
+				puts "waiting for DOS boot request, address $adata"
+				# puts "sleep 50"
+				after 50
+				set adata [get_bulkaddr_from_fpga]
+			}
+			puts "Sending TOGGLE VIDEO"
+			push_data_to_fpga "c0003300"
+			push_data_to_fpga "800033ee"
+		} else  {
+			puts "NO BOOT, entering flash emulation loop"
+		}
+		# We've loaded the bios if necessary (alternatively could have entered this command post-boot)
+		# now loop processing sector requests (first after boot will be 00010000
+		# TODO may need to implement a request counter in case of duplicates, use reserved BPD eg 0000:04AC to 04EF
 
-		# This is { command, word_address, high_byte, low_byte} ie backwards when reading machine code instructions
-		# See entry.asm for SDRAM_POST, execution starts at fff0 (word addr 0x78) via instruction "ea 55 ff"
-		# which jumps to address ff55 ie word address 0x2a (TODO check exactly since it's not aligned to a word).
-
-		# For Test1 - Write first few rom addresses
-		# push_data_to_fpga "01001234"
-		# push_data_to_fpga "00000000"
-		# push_data_to_fpga "01015678"
-		# push_data_to_fpga "00000000"
-		# push_data_to_fpga "0102abcd"
-		# push_data_to_fpga "00000000"
-		
-		# (No longer necessary since I've fixed the run/halt logic...)
-		# Change boot vector to jump to itself at fff0 - works, PC is scanning FFFx
-		push_data_to_fpga "0178f0ea"
-		push_data_to_fpga "00000000"
-		
-		# Write NOPs to SDRAM_POST (since I'm not sure about alignment), then out to leds port and loop via boot addr
-		# HMMM, OUT ax takes 8 bit address, so how to access f100..f103 ?? Aha, neex to use dx for 16 bit port address
-		# nop; nop; nop; nop	90 90 90 90
-		push_data_to_fpga "01299090"
-		push_data_to_fpga "00000000"
-		push_data_to_fpga "012a9090"
-		push_data_to_fpga "00000000"
-		# mov ax, 6745			b8 45 67 - NB UNEXPECTEDLY 7 gets displayed via ledg_[7:4], expected 5, is the bus reversed?
-		# mov dx, f100			ba 01 f1	port f101
-		push_data_to_fpga "012b45b8"
-		push_data_to_fpga "00000000"
-		push_data_to_fpga "012cba67"
-		push_data_to_fpga "00000000"
-		push_data_to_fpga "012df101"
-		push_data_to_fpga "00000000"
-
-		# out dx, ax 			ef
-		# jmp 00fff0			ea f0 ff 00
-		push_data_to_fpga "012eeaef"
-		push_data_to_fpga "00000000"
-		push_data_to_fpga "012ffff0"
-		push_data_to_fpga "00000000"
-		push_data_to_fpga "01300000"
-		push_data_to_fpga "00000000"
-		
-		# Change boot vector to jump to itself at ff55
-		push_data_to_fpga "017855ea"
-		push_data_to_fpga "00000000"
+		set prevsector -1
+		set fdlooping 1
+		while {$fdlooping==1} {
+			# read adata repeatedly until it settles (sync to clock domain)
+			# puts "fdloop"
+			set adata_prev $adata
+			set adata [get_bulkaddr_from_fpga]
+			set adata2 [string range $adata 2 3]
+			set adata3 [string range $adata 4 5]
+			# puts "2nd/3rd byte $adata2 $adata3"
+			# puts "prev adata $adata_prev current $adata"
+			while {$adata != $adata_prev} {
+				# puts "2nd/3rd byte $adata2 $adata3"
+				# puts "waiting: prev adata $adata_prev current $adata"
+				after 5
+				set adata_prev $adata
+				set adata [get_bulkaddr_from_fpga]
+				set adata3 [string range $adata 4 5]
+			}
+			# process request
+			set sectorhex [string range $adata 2 5]
+			# puts "sectorhex = $sectorhex"
+			set sector [expr 0x$sectorhex - 256]
+			# puts "sector = $sector"
+			if {$sector != $prevsector} {
+				# set fdfilename "floppy_mos_v03.zpk"
+				# set fdfilename "freedos.zpk"
+				set fdfilename "dos6.22.zpk"
+				puts "sending $fdfilename sector $sector"
+				set fp [open "$fdfilename" r]
+				fconfigure $fp -translation binary
+				seek $fp [expr $sector * 1024]
+				send_sector $fp
+				set prevsector $sector
+			}
+			after 10
+		}
+		# End "b" command
 	}
 	# Readback leds_
 	if { $cmd == "d" } {
