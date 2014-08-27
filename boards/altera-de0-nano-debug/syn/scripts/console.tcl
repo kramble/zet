@@ -322,6 +322,7 @@ while {$stop==0} {
 	if { $cmd == "b" } {
 		puts "Booting with flash emulation"
 		# Check for boot
+		set noboot 0
 		set adata [get_bulkaddr_from_fpga]
 		# First byte is always 00, check the second byte (00 at boot, 01 or greater for diskett I/O)
 		set adata2 [string range $adata 2 3]
@@ -354,6 +355,7 @@ while {$stop==0} {
 			push_data_to_fpga "800033ee"
 		} else  {
 			puts "NO BOOT, entering flash emulation loop"
+			set noboot 1
 		}
 		# We've loaded the bios if necessary (alternatively could have entered this command post-boot)
 		# now loop processing sector requests (first after boot will be 00010000
@@ -366,22 +368,22 @@ while {$stop==0} {
 			# puts "fdloop"
 			set adata_prev $adata
 			set adata [get_bulkaddr_from_fpga]
-			set adata2 [string range $adata 2 3]
-			set adata3 [string range $adata 4 5]
-			# puts "2nd/3rd byte $adata2 $adata3"
 			# puts "prev adata $adata_prev current $adata"
 			while {$adata != $adata_prev} {
-				# puts "2nd/3rd byte $adata2 $adata3"
 				# puts "waiting: prev adata $adata_prev current $adata"
 				after 5
 				set adata_prev $adata
 				set adata [get_bulkaddr_from_fpga]
-				set adata3 [string range $adata 4 5]
 			}
 			# process request
 			set sectorhex [string range $adata 2 5]
 			# puts "sectorhex = $sectorhex"
 			set sector [expr 0x$sectorhex - 256]
+			if {$noboot==1} {
+				# Prevent re-send of sector on restart
+				set prevsector $sector
+				set noboot 0
+			}
 			# puts "sector = $sector"
 			if {$sector != $prevsector} {
 				# set fdfilename "floppy_mos_v03.zpk"
