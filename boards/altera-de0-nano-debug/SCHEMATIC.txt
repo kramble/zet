@@ -21,7 +21,7 @@ protect the FPGA I/O pins).
 
 Crude ASCII-ART schematic
 
-5V       -------------------------o-----o-- PS2 Connector pin 5
+5V       -------------------------o-----o-- PS2 Connector pin 4
                Schottky           |     |
                Diodes             |     |
 3.3V     --------o----o       2k2 \     \
@@ -30,7 +30,7 @@ Crude ASCII-ART schematic
                 ---  ---          /     /
                  |    |           |     |
                  |    |    120    |     |
-PS2_clk  --------o-------/\/\/\---o-------- PS2 Connector pin 6
+PS2_clk  --------o-------/\/\/\---o-------- PS2 Connector pin 5
                  |    |                 | 
                  |    |    120          |
 PS2_data -------------o---/\/\/\--------o-- PS2 Connector pin 1
@@ -40,6 +40,15 @@ PS2_data -------------o---/\/\/\--------o-- PS2 Connector pin 1
                  |    |
 GND      --------o----o-------------------- PS2 Connector pin 3
 
+
+PS2 Pin numbers
+
+There seems to be some confusion about the connector pin numbering!
+The above pin numbers are taken from http://en.wikipedia.org/wiki/PS/2_port
+But the DE2-115 schematic numbers the pins differently (J7 pins 1 to 11).
+And http://retired.beyondlogic.org/keyboard/keybrd.htm uses yet another numbering
+scheme (same physical connector pins, but numbered in a different order).
+Just be careful out there and do your own research.
 
 Pin assignments
 
