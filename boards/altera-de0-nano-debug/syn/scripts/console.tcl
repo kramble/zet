@@ -93,7 +93,6 @@ proc send_bulk {fp} {
 		if { 1 } {
 			# Push 256 bits (32 bytes) each time, vis flags + 31 data bytes
 			# Flags = top bit strobe and lowest 5 bits is byte count (0 is the idle state)
-			# TODO use 2 strobe bits and alternate for double the speed
 			# The data is read in raw form, so needs to be pre-formatted with control signals
 			# The flash controller latches data on strobe, then decrements count each time
 			# a byte is read, passing { count, byte } as the 16 bit word back to caller.
@@ -142,7 +141,6 @@ proc send_sector {fp} {
 
 			# Push 256 bits (32 bytes) each time, vis flags + 31 data bytes
 			# Flags = top bit strobe and lowest 5 bits is byte count (0 is the idle state)
-			# TODO use 2 strobe bits and alternate for double the speed
 			# The data is read in raw form, so needs to be pre-formatted with control signals
 			# The flash controller latches data on strobe, then decrements count each time
 			# a byte is read, passing { count, byte } as the 16 bit word back to caller.
@@ -365,8 +363,6 @@ while {$stop==0} {
 		}
 		# We've loaded the bios if necessary (alternatively could have entered this command post-boot)
 		# now loop processing sector requests (first after boot will be 00010000
-		# TODO may need to implement a request counter in case of duplicates, use reserved BPD eg 0000:04AC to 04EF
-
 
 		# CARE HARD CODED FILENAME
 		# set fdfilename "floppy_mos_v03.zpk"
@@ -467,7 +463,7 @@ while {$stop==0} {
 		set rdata [get_data_from_fpga]
 		puts "GPIO LEDS = $rdata"
 	}
-	# Readback bulk address (TODO implement disk I/O)
+	# Readback bulk address (for debugging)
 	if { $cmd == "a" } {
 		set adata [get_bulkaddr_from_fpga]
 		puts "BULK ADDR = $adata"

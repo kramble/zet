@@ -37,7 +37,6 @@ The third field is the gpio LED port (16 bits, compare 14 in the DE2-115), for d
 NB The 8 De0-Nano leds are assigned to bits [3:0] of this port, plus a few status signals
 (currently the various reset lines).
 Pushbuttons KEY0 and KEY1 are connected as reset and nmi.
-The 4 dip switches are currently unused (on DE2-115 they selected sdcard or flash diskette).
 
 The nano starts up held in the reset state. To run simply enter the "r" command and "h"
 to halt (asserts reset). "v" switches between the simple vga display and the normal vga,
