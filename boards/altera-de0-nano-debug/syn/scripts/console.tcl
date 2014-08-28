@@ -1,4 +1,5 @@
 ##
+##
 # console.tcl ... based on fpgaprog.tcl
 #
 # Copyright (c) 2011 fpgaminer@bitcoin-mining.com
@@ -294,12 +295,14 @@ while {$stop==0} {
 		set fp [open $mem_name r]
 		fconfigure $fp -translation binary
 		send_loop $fp
+		close $fp
 	}
 	if { $cmd == "k" } {
 		set mem_name [get_bulkfile]
 		set fp [open $mem_name r]
 		fconfigure $fp -translation binary
 		send_bulk $fp
+		close $fp
 	}
 	if { $cmd == "h" } {
 		# Halt
@@ -341,6 +344,7 @@ while {$stop==0} {
 			set fp [open "$fdfilename" r]
 			fconfigure $fp -translation binary
 			send_bulk $fp
+			close $fp
 			# bulk address should now be 00010000 for first sector of DOS boot
 			set adata [get_bulkaddr_from_fpga]
 			while {$adata != "00010000"} {
@@ -361,8 +365,22 @@ while {$stop==0} {
 		# now loop processing sector requests (first after boot will be 00010000
 		# TODO may need to implement a request counter in case of duplicates, use reserved BPD eg 0000:04AC to 04EF
 
+
+		# CARE HARD CODED FILENAME
+		# set fdfilename "floppy_mos_v03.zpk"
+		# set fdfilename "freedos.zpk"
+		set fdfilename "dos6.22.zpk"
+
+		# keep file open during loop for speed
+		set fp [open "$fdfilename" r]
+		fconfigure $fp -translation binary
+		
 		set prevsector -1
+		set prevlowaddrbyte "FF"
 		set fdlooping 1
+		
+		# This noop never exits (press CONTROL-C to terminate)
+		# TODO non-blocking read on stdin to detect keypress and exit loop
 		while {$fdlooping==1} {
 			# read adata repeatedly until it settles (sync to clock domain)
 			# puts "fdloop"
@@ -379,25 +397,30 @@ while {$stop==0} {
 			set sectorhex [string range $adata 2 5]
 			# puts "sectorhex = $sectorhex"
 			set sector [expr 0x$sectorhex - 256]
+			# puts "sector = $sector"
+			set lowaddrbyte [string range $adata 6 7]
+			# puts "lowaddrbyte = $lowaddrbyte"
 			if {$noboot==1} {
 				# Prevent re-send of sector on restart
 				set prevsector $sector
 				set noboot 0
 			}
-			# puts "sector = $sector"
-			if {$sector != $prevsector} {
-				# set fdfilename "floppy_mos_v03.zpk"
-				# set fdfilename "freedos.zpk"
-				set fdfilename "dos6.22.zpk"
+			# Send if requested sector changes OR same sector is re-requested (lowaddrbyte changes from FF to 00)
+			# NB The latter attempts to fix bug where transfer hangs if same sector is requested twice, we check
+			#    for prevlowaddrbyte != "00", NOT == "FF" due to race condition with bios writing the address
+			if {($sector != $prevsector) || ($lowaddrbyte == "00" && $prevlowaddrbyte != "00")} {
 				puts "sending $fdfilename sector $sector"
-				set fp [open "$fdfilename" r]
-				fconfigure $fp -translation binary
 				seek $fp [expr $sector * 1024]
 				send_sector $fp
 				set prevsector $sector
+				set prevlowaddrbyte prevlowaddrbyte
 			}
 			after 10
 		}
+		
+		# Not currently reached, but close anyway (for future changes)
+		close $fp
+		
 		# End "b" command
 	}
 	# Readback leds_
@@ -412,6 +435,4 @@ while {$stop==0} {
 	}
 }
 
-# TODO test if it's open before closing, but safe just to comment it out
-# close $fp
 puts "\n\n --- Shutting Down --- \n\n"
