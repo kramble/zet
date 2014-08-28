@@ -278,7 +278,7 @@ puts "FPGA Found: $fpga_name\n\n"
 set stop 0
 
 while {$stop==0} {
-	puts -nonewline "\nCommand (a,b,d,h,k,q,r,s,v,x)? "
+	puts -nonewline "\nCommand (a,b,c,d,h,k,q,r,s,v,x)? "
 	gets stdin cmd
 	puts ""
 	if { $cmd == "q" } {
@@ -323,7 +323,7 @@ while {$stop==0} {
 		push_data_to_fpga "800033ee"
 	}
 	if { $cmd == "b" } {
-		puts "Booting with flash emulation"
+		puts "Booting FLOPPY with floppy emulation"
 		# Check for boot
 		set noboot 0
 		set adata [get_bulkaddr_from_fpga]
@@ -340,11 +340,16 @@ while {$stop==0} {
 			after 500
 			# CARE HARD CODED FILENAME
 			set fdfilename "biosfd_v04.zbd"
+			# BIOS v5 forces switches ON (disable sdcard boot) - NOT NEEDED with DIP switch version of SOF
+			# set fdfilename "biosfd_v05.zbd"
 			puts "sending $fdfilename"
 			set fp [open "$fdfilename" r]
 			fconfigure $fp -translation binary
 			send_bulk $fp
 			close $fp
+			puts "Sending TOGGLE VIDEO"
+			push_data_to_fpga "c0003300"
+			push_data_to_fpga "800033ee"
 			# bulk address should now be 00010000 for first sector of DOS boot
 			set adata [get_bulkaddr_from_fpga]
 			while {$adata != "00010000"} {
@@ -354,11 +359,8 @@ while {$stop==0} {
 				after 50
 				set adata [get_bulkaddr_from_fpga]
 			}
-			puts "Sending TOGGLE VIDEO"
-			push_data_to_fpga "c0003300"
-			push_data_to_fpga "800033ee"
 		} else  {
-			puts "NO BOOT, entering flash emulation loop"
+			puts "NO BOOT, entering floppy emulation loop"
 			set noboot 1
 		}
 		# We've loaded the bios if necessary (alternatively could have entered this command post-boot)
@@ -422,6 +424,43 @@ while {$stop==0} {
 		close $fp
 		
 		# End "b" command
+	}
+	if { $cmd == "c" } {
+		puts "Booting HDD, no floppy emulation"
+		# Check for boot
+		set noboot 0
+		set adata [get_bulkaddr_from_fpga]
+		# First byte is always 00, check the second byte (00 at boot, 01 or greater for diskett I/O)
+		set adata2 [string range $adata 2 3]
+		# puts "adata $adata 2nd byte $adata2"
+		if {$adata2 == "00"} {
+			# Send bios
+			puts "BOOT - Sending BIOS"
+			# Send Reset then Run
+			push_data_to_fpga "00000000"
+			push_data_to_fpga "80000000"
+			# Allow time for sdram init (not sure if needed, but may fix boot hangs)
+			after 500
+			# CARE HARD CODED FILENAME
+			set fdfilename "biosfd_v04.zbd"
+			puts "sending $fdfilename"
+			set fp [open "$fdfilename" r]
+			fconfigure $fp -translation binary
+			send_bulk $fp
+			close $fp
+			puts "Sending TOGGLE VIDEO"
+			push_data_to_fpga "c0003300"
+			push_data_to_fpga "800033ee"
+		} else  {
+			puts "NO BOOT, nothing to do here!!"
+			set noboot 1
+		}
+		
+		# Return to menu (else we hang waiting for a DOS request that never comes)
+		puts "Use b function to start floppy emulation if required"
+		puts "(BUG) NB enter 'DIR A:' first at DOS prompt else this will reboot "
+		
+		# End "c" command
 	}
 	# Readback leds_
 	if { $cmd == "d" } {

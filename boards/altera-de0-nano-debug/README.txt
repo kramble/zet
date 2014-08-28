@@ -45,7 +45,10 @@ but this will not work until the bios is loaded.
 
 The following may change as future features are implemented...
 
-DOS6.22 now boots from diskette emulation (read-only) via console
+Note the DIP switch settings below, switches 3,4 must be OFF to use the console
+Switches 1,2 select the MSDOS boot device (set them ON for console floppy boot)
+
+To boot DOS6.22 via floppy diskette emulation (read-only) through the console...
 
 You will need a 1.44MB floppy disk image for the DOS6.22 boot disk (available on
 the web), ensure it is named Dos6.22.img
@@ -60,7 +63,7 @@ Load the SOF configuration into the DE0-Nano via program-fpga-board.bat
 
 Start the console via console.bat
 
-Just enter "b" and the console will upload the bios, switch to VGA video and boot DOS.
+Enter "b" and the console will upload the bios, switch to VGA video and boot DOS.
 
 The console is now running in a loop. To abort, press CONTROL-C. You can restart it
 and type "b" to continue floppy emulation (the boot will be skipped), or to reboot
@@ -73,7 +76,9 @@ support the console bios upload and floppy disk emulation (read-only).
 
 Console commands
 a : print bulk load address (nano_flash.v port 0238,023A)
-b : boot and run diskette emulator (zpk file)
+b : upload bios, boot and run diskette emulator (zpk file)
+    NB set DIP switches 0,1 ON when using option "b"
+c : upload bios, boot from sdcard (NB set DIP switches 0,1 OFF)
 d : print gpio led data
 h : halt (reset)
 k : select bulk data file and upload (zbd file)
@@ -83,16 +88,26 @@ s : select bootrom data file and upload (zet file)
 v : toggle VGA display adapter
 x : exit console (synonym for quit)
 
+DIP Switches
+1  } If either of these is ON, boot from floppy emulation, else sdcard
+2  }
+3    If ON, sets initial VGA display to main BIOS VGA instead of simple boot VGA
+4    if ON, console reset is disabled (use manual KEY0 to override)
+
+When using the console, you should set switches 3,4 OFF. Switches 1,2 select the
+boot device (OFF for sdcard, ON for console floppy emulator)
+
+For standalone boot from sdcard, you should set switches 1,2 OFF and 3,4 ON
+NB Standalone boot is not yet available as the bios still needs to be uploaded via
+   the console, but the DIP switch support is ready for it when it is done.
+
 There are utilities for generating the .zet .zbd and .zpk files, zetgen.cpp, zbdgen.cpp
 and zpack.cpp (these are generic C programs which should compile easily, I have supplied
 windows .exe versions compiled under MSVC 2008 Express). They take a binary file and
 convert it to the various upload formats.
 
 Upcoming features...
-Fix bug where requesting the same sector twice hangs the console. This will require a
-request counter which can be implemented in the bios, or perhaps better, in hardware.
-Loading of the bios from SDCARD, which should fully automate the bootup process (I'm
-awaiting delivery of the Arduino sdcard adapter, so no progress on this yet).
+Loading of the bios from SDCARD, which should fully automate the bootup process
 
 Build notes...
 I originally built from http://zet.aluzina.org/images/3/32/Zet-1.3.1.zip

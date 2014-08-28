@@ -22,9 +22,10 @@ module kotku (
     input        clk_50_,
 
     // General purpose IO
-    input        key0_,			// reset
-    input        key1_,			// nmi
-
+    input         key0_,			// reset
+    input         key1_,			// nmi
+	input  [ 3:0] nano_sw_,			// dip switches, ON=logic_0, OFF=logic_1 (the DE0-Nano manual is WRONG!)
+	
     // sdram signals
     output [11:0] sdram_addr_,		// NB [12] is driven to GND in the qsf file
     inout  [15:0] sdram_data_,
@@ -82,7 +83,11 @@ module kotku (
     wire        tft_lcd_vsync_;
 	
     // General purpose IO
-    wire  [7:0] sw_ = { 7'd0, ~key0_ };	// input NB sw[0] is reset, so use KEY0 on nano, but invert since KEY0 is active low
+	// NB switches are used to configure boot order, if any are ON, the boot is to floppy (see bios code)
+	//    so pass nano_sw[1:0] for boot select. Switches nano_sw[3:2] configure console so do NOT use these else
+	//    boot order cannot be set indpependently. NB The switches are active low (the DE0-Nano manual is WRONG!)
+    wire  [7:0] sw_ = { 5'd0, ~nano_sw_[1], ~nano_sw_[0], ~key0_ };	// input NB sw[0] is reset, so use KEY0 on nano
+														// but invert since KEY0 is active low
 
 	wire [15:0] leds_;			// NB Want 16 bits cf 14 for DE2-115 so modified sw_leds.v (8 are physical I/O on nano
 								// but all 16 are output to simple vdu for use in debugging (hence 16 not 14)
@@ -1177,11 +1182,14 @@ module kotku (
   
   // nano console interface
 
-  assign vw_rst = vw_data_in_buf[31];		// NB active low so we initialize in reset state
+  // NB vw_rst is active low so we initialize in reset state (unless nano_sw_[3] is ON)
+  // NB The switches are active low ie ON=logic_0 (the DE0-Nano manual is WRONG!)
+  assign vw_rst = vw_data_in_buf[31] | ~nano_sw_[3];	// nano_sw_[3] disables console reset (XOR is not appropriate)
 
   wire vw_vga_toggle = vw_data_in_buf[30];
   reg vw_vga_toggle_d = 0;
-  reg vw_vga_mode = 0;						// selects between simple vga and main vga
+  reg vw_vga_mode_reg = 0;					// selects between simple vga and main vga
+  wire vw_vga_mode;							// XOR'd with nano_sw_[2] to configure startup value
   
 `ifndef SIMULATION		// original
 	// nano control channel
@@ -1201,8 +1209,10 @@ module kotku (
 `endif
 		vw_vga_toggle_d <= vw_vga_toggle;		// Toggle vga mode on positive edge
 		if (~vw_vga_toggle_d & vw_vga_toggle)
-			vw_vga_mode <= ~vw_vga_mode;
+			vw_vga_mode_reg <= ~vw_vga_mode_reg;
   end
+
+  assign vw_vga_mode = vw_vga_mode_reg ^ ~nano_sw_[2];	// XOR'd with nano_sw_[2] to configure startup value
   
   assign nano_led_ = { rst_lck, vw_rst, sw_[0], nmi, leds_[3:0] };		// live debug, NB ledg_[3:0] is driven by low 4 bits of
 																		// output port 0xf101

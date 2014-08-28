@@ -153,6 +153,10 @@ set_global_assignment -name SDC_FILE kotku.sdc
 set_location_assignment PIN_R8 -to clk_50_
 set_location_assignment PIN_J15 -to key0_
 set_location_assignment PIN_E1 -to key1_
+set_location_assignment PIN_M1 -to nano_sw_[0]
+set_location_assignment PIN_T8 -to nano_sw_[1]
+set_location_assignment PIN_B9 -to nano_sw_[2]
+set_location_assignment PIN_M15 -to nano_sw_[3]
 
 #============================================================
 # SDRAM ... from DE0-Nano GOLDEN_TOP
